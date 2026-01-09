@@ -1,156 +1,233 @@
 import { useState, useEffect } from "react";
-import { Camera, AlertTriangle, Shield, Activity, Eye } from "lucide-react";
-import { Header } from "@/components/dashboard/Header";
-import { StatsCard } from "@/components/dashboard/StatsCard";
-import { CameraFeed } from "@/components/dashboard/CameraFeed";
-import { AlertItem } from "@/components/dashboard/AlertItem";
-import { ActivityTimeline } from "@/components/dashboard/ActivityTimeline";
-import { ScanStatus } from "@/components/dashboard/ScanStatus";
-
-// Mock data
-const mockCameras = [
-  { id: "CAM-001", name: "Main Street East", location: "123 Main St, Junction A", status: "online" as const },
-  { id: "CAM-002", name: "Downtown Plaza", location: "456 Commerce Ave", status: "alert" as const, lastAlert: "Unidentified person loitering" },
-  { id: "CAM-003", name: "Industrial Zone Gate", location: "789 Factory Rd, Entry B", status: "online" as const },
-  { id: "CAM-004", name: "Residential Block 4", location: "321 Oak Lane", status: "offline" as const },
-  { id: "CAM-005", name: "Park Avenue North", location: "654 Park Ave, Sector 2", status: "online" as const },
-  { id: "CAM-006", name: "Mall Parking Lot", location: "987 Shopping Center", status: "alert" as const, lastAlert: "Suspicious vehicle detected" },
-];
-
-const mockAlerts = [
-  { id: "ALT-001", type: "suspicious_person" as const, severity: "high" as const, title: "Unidentified person loitering", location: "Downtown Plaza", timestamp: "2 min ago", cameraId: "CAM-002" },
-  { id: "ALT-002", type: "vehicle" as const, severity: "medium" as const, title: "Suspicious vehicle detected", location: "Mall Parking Lot", timestamp: "5 min ago", cameraId: "CAM-006" },
-  { id: "ALT-003", type: "intrusion" as const, severity: "low" as const, title: "Motion detected after hours", location: "Industrial Zone Gate", timestamp: "12 min ago", cameraId: "CAM-003" },
-  { id: "ALT-004", type: "general" as const, severity: "medium" as const, title: "Unusual crowd gathering", location: "Main Street East", timestamp: "18 min ago", cameraId: "CAM-001" },
-];
-
-const mockActivities = [
-  { id: "ACT-001", type: "alert" as const, message: "Alert triggered at CAM-002", timestamp: "14:32:15" },
-  { id: "ACT-002", type: "scan" as const, message: "AI scan completed - 6 cameras analyzed", timestamp: "14:30:00" },
-  { id: "ACT-003", type: "clear" as const, message: "CAM-005 returned to normal status", timestamp: "14:28:45" },
-  { id: "ACT-004", type: "camera" as const, message: "CAM-004 went offline", timestamp: "14:25:12" },
-  { id: "ACT-005", type: "scan" as const, message: "Starting scheduled patrol scan", timestamp: "14:25:00" },
-  { id: "ACT-006", type: "alert" as const, message: "Suspicious activity at CAM-006", timestamp: "14:22:33" },
-  { id: "ACT-007", type: "clear" as const, message: "All zones cleared - routine check", timestamp: "14:20:00" },
-];
+import { 
+  Camera, 
+  AlertTriangle, 
+  Shield, 
+  Play, 
+  Pause, 
+  Maximize2,
+  Settings,
+  Bell,
+  CheckCircle,
+  Clock,
+  Scan
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const Index = () => {
-  const [isScanning, setIsScanning] = useState(true);
-  const [scanProgress, setScanProgress] = useState(67);
+  const [isScanning, setIsScanning] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [cameraStatus, setCameraStatus] = useState<"online" | "offline" | "alert">("online");
+  const [alerts, setAlerts] = useState<Array<{ id: string; message: string; time: string; severity: "high" | "medium" | "low" }>>([
+    { id: "1", message: "Motion detected in restricted area", time: "2 min ago", severity: "high" },
+    { id: "2", message: "Unusual activity pattern", time: "15 min ago", severity: "medium" },
+  ]);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
-
-    // Simulate scan progress
-    const scanTimer = setInterval(() => {
-      setScanProgress((prev) => {
-        if (prev >= 100) {
-          setIsScanning(false);
-          return 0;
-        }
-        return prev + 5;
-      });
-    }, 1000);
-
-    return () => {
-      clearInterval(timer);
-      clearInterval(scanTimer);
-    };
+    return () => clearInterval(timer);
   }, []);
 
-  const onlineCameras = mockCameras.filter(c => c.status !== "offline").length;
-  const activeAlerts = mockCameras.filter(c => c.status === "alert").length;
+  const handleStartScan = () => {
+    setIsScanning(true);
+    // Simulate scan completion
+    setTimeout(() => {
+      setIsScanning(false);
+    }, 5000);
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="p-6 space-y-6">
-        {/* Top Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard
-            title="Cameras Online"
-            value={`${onlineCameras}/${mockCameras.length}`}
-            icon={Camera}
-            variant="success"
-          />
-          <StatsCard
-            title="Active Alerts"
-            value={activeAlerts}
-            icon={AlertTriangle}
-            variant="destructive"
-            trend={{ value: 15, isPositive: false }}
-          />
-          <StatsCard
-            title="Incidents Today"
-            value={12}
-            icon={Shield}
-            variant="warning"
-          />
-          <StatsCard
-            title="AI Scans Today"
-            value={248}
-            icon={Eye}
-            trend={{ value: 8, isPositive: true }}
-          />
+    <div className="min-h-screen bg-background p-6">
+      {/* Header */}
+      <header className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10 glow-primary">
+            <Shield className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold">PatrolVision</h1>
+            <p className="text-xs text-muted-foreground">Street Camera Monitor</p>
+          </div>
         </div>
+        
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-mono text-muted-foreground">
+            {currentTime.toLocaleTimeString()}
+          </span>
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="w-5 h-5" />
+            {alerts.length > 0 && (
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive status-pulse" />
+            )}
+          </Button>
+          <Button variant="ghost" size="icon">
+            <Settings className="w-5 h-5" />
+          </Button>
+        </div>
+      </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content Area */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Camera Grid */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Camera className="w-5 h-5 text-primary" />
-                  Live Camera Feeds
-                </h2>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-                  <Activity className="w-4 h-4" />
-                  {currentTime.toLocaleTimeString()}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Camera Feed */}
+        <div className="lg:col-span-2">
+          <div className={cn(
+            "glass-panel rounded-xl overflow-hidden transition-all duration-300",
+            cameraStatus === "alert" && "border-destructive/50 glow-destructive"
+          )}>
+            {/* Camera View */}
+            <div className="relative aspect-video bg-muted/30">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Camera className="w-20 h-20 text-muted-foreground/30" />
+              </div>
+              
+              {/* Scan line effect */}
+              {isScanning && (
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  <div className="absolute w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent scan-line" />
+                </div>
+              )}
+              
+              {/* Status Badge */}
+              <div className="absolute top-4 left-4">
+                <div className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border backdrop-blur",
+                  cameraStatus === "online" && "bg-success/20 text-success border-success/30",
+                  cameraStatus === "alert" && "bg-destructive/20 text-destructive border-destructive/30",
+                  cameraStatus === "offline" && "bg-muted text-muted-foreground border-border"
+                )}>
+                  <span className={cn(
+                    "w-2 h-2 rounded-full status-pulse",
+                    cameraStatus === "online" && "bg-success",
+                    cameraStatus === "alert" && "bg-destructive",
+                    cameraStatus === "offline" && "bg-muted-foreground"
+                  )} />
+                  {cameraStatus === "online" && "Live"}
+                  {cameraStatus === "alert" && "Alert"}
+                  {cameraStatus === "offline" && "Offline"}
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {mockCameras.map((camera) => (
-                  <CameraFeed key={camera.id} {...camera} />
-                ))}
+              
+              {/* Camera ID */}
+              <div className="absolute top-4 right-4">
+                <span className="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur text-sm font-mono">
+                  CAM-001
+                </span>
+              </div>
+              
+              {/* Time Overlay */}
+              <div className="absolute bottom-4 left-4">
+                <span className="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur text-sm font-mono text-primary">
+                  {currentTime.toLocaleString()}
+                </span>
+              </div>
+              
+              {/* Fullscreen Button */}
+              <button className="absolute bottom-4 right-4 p-2 rounded-lg bg-background/80 backdrop-blur hover:bg-background/90 transition-colors">
+                <Maximize2 className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Camera Info & Controls */}
+            <div className="p-4 border-t border-border/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="font-semibold">Main Street Camera</h2>
+                  <p className="text-sm text-muted-foreground">123 Main St, Downtown</p>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handleStartScan}
+                    disabled={isScanning}
+                    className={cn(
+                      "gap-2",
+                      isScanning && "bg-primary/20"
+                    )}
+                  >
+                    <Scan className={cn("w-4 h-4", isScanning && "animate-spin")} />
+                    {isScanning ? "Scanning..." : "Scan Now"}
+                  </Button>
+                </div>
               </div>
             </div>
-
-            {/* Recent Alerts */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-destructive" />
-                  Recent Alerts
-                </h2>
-                <button className="text-xs text-primary hover:underline">View all</button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {mockAlerts.map((alert) => (
-                  <AlertItem key={alert.id} {...alert} />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <ScanStatus
-              isScanning={isScanning}
-              lastScan="14:30:00"
-              nextScan="14:35:00"
-              progress={scanProgress}
-              camerasScanned={4}
-              totalCameras={6}
-            />
-            <ActivityTimeline activities={mockActivities} />
           </div>
         </div>
-      </main>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Status Card */}
+          <div className="glass-panel rounded-xl p-4">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-success" />
+              System Status
+            </h3>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Camera</span>
+                <span className="text-success font-medium">Online</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Last Scan</span>
+                <span className="font-mono">14:30:00</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Next Scan</span>
+                <span className="font-mono text-primary">14:35:00</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Scans Today</span>
+                <span className="font-mono">48</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Alerts */}
+          <div className="glass-panel rounded-xl p-4">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-destructive" />
+              Recent Alerts
+              <span className="ml-auto px-2 py-0.5 rounded-full bg-destructive/20 text-destructive text-xs">
+                {alerts.length}
+              </span>
+            </h3>
+            
+            <div className="space-y-3">
+              {alerts.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No alerts
+                </p>
+              ) : (
+                alerts.map((alert) => (
+                  <div 
+                    key={alert.id}
+                    className={cn(
+                      "p-3 rounded-lg border-l-4",
+                      alert.severity === "high" && "bg-destructive/5 border-l-destructive",
+                      alert.severity === "medium" && "bg-warning/5 border-l-warning",
+                      alert.severity === "low" && "bg-primary/5 border-l-primary"
+                    )}
+                  >
+                    <p className="text-sm font-medium">{alert.message}</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                      <Clock className="w-3 h-3" />
+                      {alert.time}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {alerts.length > 0 && (
+              <Button variant="ghost" className="w-full mt-3 text-sm">
+                View All Alerts
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
