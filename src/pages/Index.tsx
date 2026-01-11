@@ -48,8 +48,8 @@ const Index = () => {
             <Shield className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">PatrolVision</h1>
-            <p className="text-xs text-muted-foreground">Street Camera Monitor</p>
+            <h1 className="text-xl font-bold">VigilAI</h1>
+            <p className="text-xs text-muted-foreground">Vigilance Monitor</p>
           </div>
         </div>
         
@@ -133,8 +133,8 @@ const Index = () => {
             <div className="p-4 border-t border-border/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="font-semibold">Main Street Camera</h2>
-                  <p className="text-sm text-muted-foreground">123 Main St, Downtown</p>
+                  <h2 className="font-semibold">City Camera</h2>
+                  <p className="text-sm text-muted-foreground">Metropolitan Area</p>
                 </div>
                 
                 <div className="flex items-center gap-2">
