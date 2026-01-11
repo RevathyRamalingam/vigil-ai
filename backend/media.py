@@ -8,11 +8,11 @@ from uuid import UUID
 import os
 from pathlib import Path
 
-from app.db.database import get_db
-from app.db import models
-from app.schemas import schemas
-from app.services.storage import StorageService
-from app.tasks.celery_app import process_media_task
+from database import get_db
+from db import models
+import schemas
+from storage import StorageService
+from celery_app import process_media_task
 
 router = APIRouter()
 storage_service = StorageService()

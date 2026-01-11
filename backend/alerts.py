@@ -10,7 +10,7 @@ from datetime import datetime
 
 from database import get_db
 from db import models
-from schemas import schemas
+import schemas
 
 router = APIRouter()
 

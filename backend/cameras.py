@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
 
-from app.db.database import get_db
-from app.db import models
-from app.schemas import schemas
+from database import get_db
+from db import models
+import schemas
 
 router = APIRouter()
 

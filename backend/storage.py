@@ -8,7 +8,7 @@ import io
 import uuid
 from datetime import timedelta
 
-from app.core.config import settings
+from config import settings
 
 
 class StorageService:

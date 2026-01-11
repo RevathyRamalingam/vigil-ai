@@ -10,7 +10,7 @@ import numpy as np
 from typing import List, Dict
 import logging
 
-from app.core.config import settings
+from config import settings
 
 logger = logging.getLogger(__name__)
 

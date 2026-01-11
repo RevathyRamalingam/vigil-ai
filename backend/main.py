@@ -7,9 +7,9 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import logging
 
-from app.api import cameras, media, alerts, analytics, websocket
-from app.core.config import settings
-from app.db.database import engine, Base
+import cameras, media, alerts, analytics, websocket
+from config import settings
+from database import engine, Base
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
