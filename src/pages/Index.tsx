@@ -31,12 +31,23 @@ const Index = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const handleStartScan = () => {
-    setIsScanning(true);
-    // Simulate scan completion
-    setTimeout(() => {
-      setIsScanning(false);
-    }, 5000);
+ const handleStartScan = async () => {
+    setIsScanning(true); // Start the animation
+    
+    try {
+      // Connect to your FastAPI backend
+      const response = await fetch("http://localhost:8000/api/scan", { method: "POST" });
+      const data = await response.json();
+      
+      // Update UI based on what the backend found in your static folders
+      if (data.alert) {
+        setCameraStatus("alert");
+      }
+    } catch (error) {
+      console.error("Backend not reachable. Check if FastAPI is running on port 8000.");
+    } finally {
+      setIsScanning(false); // Stop the animation
+    }
   };
 
   return (

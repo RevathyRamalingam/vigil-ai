@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
     POSTGRES_DB: str = "vigilai_db"
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "postgres"
+    POSTGRES_USER: str = "vigilai"
+    POSTGRES_PASSWORD: str = "vigilai123"
     
     @property
     def DATABASE_URL(self) -> str:
