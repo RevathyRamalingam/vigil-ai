@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { 
-  Camera, 
-  AlertTriangle, 
-  Shield, 
-  Play, 
-  Pause, 
+import {
+  Camera,
+  AlertTriangle,
+  Shield,
+  Play,
+  Pause,
   Maximize2,
   Settings,
   Bell,
@@ -19,6 +19,7 @@ const Index = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [cameraStatus, setCameraStatus] = useState<"online" | "offline" | "alert">("online");
+  const [lastScanTime, setLastScanTime] = useState<string>("14:30:00");
   const [alerts, setAlerts] = useState<Array<{ id: string; message: string; time: string; severity: "high" | "medium" | "low" }>>([
     { id: "1", message: "Motion detected in restricted area", time: "2 min ago", severity: "high" },
     { id: "2", message: "Unusual activity pattern", time: "15 min ago", severity: "medium" },
@@ -33,12 +34,12 @@ const Index = () => {
 
   const handleStartScan = async () => {
     setIsScanning(true); // Start the animation
-    
+
     try {
       // Connect to your FastAPI backend
       const response = await fetch("http://localhost:8000/api/scan", { method: "POST" });
       const data = await response.json();
-      
+
       // Update UI based on what the backend found in your static folders
       if (data.alert) {
         setCameraStatus("alert");
@@ -53,8 +54,9 @@ const Index = () => {
       } else {
         setCameraStatus("online");
       }
-      
+
       console.log("Scan results:", data.results);
+      setLastScanTime(new Date().toLocaleTimeString());
     } catch (error) {
       console.error("Backend not reachable. Check if FastAPI is running on port 8000.");
     } finally {
@@ -76,7 +78,7 @@ const Index = () => {
             <p className="text-xs text-muted-foreground">Vigilance Monitor</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <span className="text-sm font-mono text-muted-foreground">
             {currentTime.toLocaleTimeString()}
@@ -105,14 +107,14 @@ const Index = () => {
               <div className="absolute inset-0 flex items-center justify-center">
                 <Camera className="w-20 h-20 text-muted-foreground/30" />
               </div>
-              
+
               {/* Scan line effect */}
               {isScanning && (
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
                   <div className="absolute w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent scan-line" />
                 </div>
               )}
-              
+
               {/* Status Badge */}
               <div className="absolute top-4 left-4">
                 <div className={cn(
@@ -132,27 +134,27 @@ const Index = () => {
                   {cameraStatus === "offline" && "Offline"}
                 </div>
               </div>
-              
+
               {/* Camera ID */}
               <div className="absolute top-4 right-4">
                 <span className="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur text-sm font-mono">
                   CAM-001
                 </span>
               </div>
-              
+
               {/* Time Overlay */}
               <div className="absolute bottom-4 left-4">
                 <span className="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur text-sm font-mono text-primary">
                   {currentTime.toLocaleString()}
                 </span>
               </div>
-              
+
               {/* Fullscreen Button */}
               <button className="absolute bottom-4 right-4 p-2 rounded-lg bg-background/80 backdrop-blur hover:bg-background/90 transition-colors">
                 <Maximize2 className="w-5 h-5" />
               </button>
             </div>
-            
+
             {/* Camera Info & Controls */}
             <div className="p-4 border-t border-border/50">
               <div className="flex items-center justify-between">
@@ -160,7 +162,7 @@ const Index = () => {
                   <h2 className="font-semibold">City Camera</h2>
                   <p className="text-sm text-muted-foreground">Metropolitan Area</p>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Button
                     onClick={handleStartScan}
@@ -187,7 +189,7 @@ const Index = () => {
               <CheckCircle className="w-4 h-4 text-success" />
               System Status
             </h3>
-            
+
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Camera</span>
@@ -195,7 +197,7 @@ const Index = () => {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Last Scan</span>
-                <span className="font-mono">14:30:00</span>
+                <span className="font-mono">{lastScanTime}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Next Scan</span>
@@ -217,7 +219,7 @@ const Index = () => {
                 {alerts.length}
               </span>
             </h3>
-            
+
             <div className="space-y-3">
               {alerts.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
@@ -225,7 +227,7 @@ const Index = () => {
                 </p>
               ) : (
                 alerts.map((alert) => (
-                  <div 
+                  <div
                     key={alert.id}
                     className={cn(
                       "p-3 rounded-lg border-l-4",
@@ -243,7 +245,7 @@ const Index = () => {
                 ))
               )}
             </div>
-            
+
             {alerts.length > 0 && (
               <Button variant="ghost" className="w-full mt-3 text-sm">
                 View All Alerts
