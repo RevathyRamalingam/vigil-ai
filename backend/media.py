@@ -15,7 +15,10 @@ from storage import StorageService
 from celery_app import process_media_task
 
 router = APIRouter()
-storage_service = StorageService()
+
+def get_storage_service():
+    return StorageService()
+
 
 
 @router.post("/upload", response_model=schemas.MediaUpload, status_code=status.HTTP_201_CREATED)
@@ -49,7 +52,9 @@ async def upload_media(
     
     # Upload to storage
     try:
+        storage_service = get_storage_service()
         file_url = await storage_service.upload_file(file)
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

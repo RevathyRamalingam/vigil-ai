@@ -31,7 +31,7 @@ const Index = () => {
     return () => clearInterval(timer);
   }, []);
 
- const handleStartScan = async () => {
+  const handleStartScan = async () => {
     setIsScanning(true); // Start the animation
     
     try {
@@ -42,13 +42,26 @@ const Index = () => {
       // Update UI based on what the backend found in your static folders
       if (data.alert) {
         setCameraStatus("alert");
+        // Add a new alert to the list if one was triggered
+        const newAlert = {
+          id: Date.now().toString(),
+          message: "Suspicious activity detected during scan",
+          time: "Just now",
+          severity: "high" as const
+        };
+        setAlerts(prev => [newAlert, ...prev]);
+      } else {
+        setCameraStatus("online");
       }
+      
+      console.log("Scan results:", data.results);
     } catch (error) {
       console.error("Backend not reachable. Check if FastAPI is running on port 8000.");
     } finally {
       setIsScanning(false); // Stop the animation
     }
   };
+
 
   return (
     <div className="min-h-screen bg-background p-6">

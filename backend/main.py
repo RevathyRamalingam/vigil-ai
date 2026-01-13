@@ -1,21 +1,26 @@
 """
 VigilAI FastAPI Backend - Main Application Entry Point
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import logging
 
+from datetime import datetime
+import models
 import cameras, media, alerts, analytics, websocket
 from config import settings
 from database import engine, Base
-import tensorflow as tf
+from ultralytics import YOLO
 import os
+from sqlalchemy.orm import Session
+from database import SessionLocal
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 # Path to where your videos are stored in the project
 VIDEO_DIR = "./static/videos"
@@ -26,9 +31,12 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting VigilAI Backend...")
     
-    # Create database tables
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables created")
+    try:
+        # Create database tables
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created")
+    except Exception as e:
+        logger.warning(f"Database connection failed: {e}. Running without DB persistence.")
     
     yield
     
@@ -49,46 +57,55 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["*"],  # For development, allow all origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-model = tf.keras.applications.MobileNetV2(weights="imagenet")
+
+model = YOLO('yolov8n.pt')
 
 def get_db():
-    db = SessionLocal()
     try:
+        db = SessionLocal()
         yield db
+    except Exception:
+        yield None
     finally:
-        db.close()
+        if 'db' in locals() and db:
+            db.close()
 
 def analyze_single_video(video_path):
-    """Processes one video and returns a confidence score."""
-    cap = cv2.VideoCapture(video_path)
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    
-    if frame_count == 0:
-        return 0.0
+    """Processes one video using YOLO and returns a confidence score."""
+    # This runs the YOLO model on the video path provided
+    try:
+        results = model(video_path, stream=True)
         
-    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_count // 2)
-    ret, frame = cap.read()
-    cap.release()
+        highest_conf = 0.0
+        
+        for r in results:
+            # If the AI detects anything (boxes), get the confidence
+            if len(r.boxes) > 0:
+                current_max = float(r.boxes.conf.max())
+                if current_max > highest_conf:
+                    highest_conf = current_max
+            
+            # Stop after first few frames to keep the 'Scan' button fast
+            break 
 
-    if not ret:
+        return highest_conf
+    except Exception as e:
+        logger.error(f"Error analyzing video {video_path}: {e}")
         return 0.0
-    
-    # ML Inference (using MobileNetV2 placeholder)
-    img = cv2.resize(frame, (224, 224))
-    img = tf.keras.applications.mobilenet_v2.preprocess_input(img)
-    img = np.expand_dims(img, axis=0)
-    
-    predictions = model.predict(img)
-    return float(np.max(predictions))
 
 @app.post("/api/scan")
 async def scan_multiple_videos(db: Session = Depends(get_db)):
-    VIDEO_DIR = "./static/videos"
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    VIDEO_DIR = os.path.join(BASE_DIR, "static", "videos")
+    if not os.path.exists(VIDEO_DIR):
+
+        os.makedirs(VIDEO_DIR)
+        
     video_files = [f for f in os.listdir(VIDEO_DIR) if f.endswith(('.mp4', '.avi'))]
     
     # Dictionary to store all results
@@ -105,38 +122,33 @@ async def scan_multiple_videos(db: Session = Depends(get_db)):
         if is_alert:
             alert_triggered = True
 
-        # 2. Save entry to PostgreSQL for this specific video
-        new_detection = models.Detection(
-            video_name=video_name,
-            alert_status=is_alert,
-            confidence=round(confidence, 4),
-            timestamp=datetime.now()
-        )
-        db.add(new_detection)
-        
-        # 3. Add to our return dictionary
+        # 2. Add to our return dictionary
         scan_report[video_name] = {
             "status": "Suspicious" if is_alert else "Normal",
             "confidence": round(confidence, 2),
             "timestamp": datetime.now().strftime("%H:%M:%S")
         }
 
-    # Commit all detections at once
-    db.commit()
-
     return {
-        "overall_alert": alert_triggered,
+        "alert": alert_triggered,
         "total_scanned": len(video_files),
         "results": scan_report
     }
 
 
 # Include routers
-app.include_router(cameras.router, prefix="/api/cameras", tags=["Cameras"])
-app.include_router(media.router, prefix="/api/media", tags=["Media"])
-app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
-app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
-app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
+try:
+    import cameras, media, alerts, analytics, websocket
+    app.include_router(cameras.router, prefix="/api/cameras", tags=["Cameras"])
+    app.include_router(media.router, prefix="/api/media", tags=["Media"])
+    app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
+    app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
+    app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
+except Exception as e:
+    logger.warning(f"Some routers could not be included due to dependency issues: {e}")
+
+
+
 
 
 @app.get("/")
