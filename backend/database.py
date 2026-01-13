@@ -7,10 +7,12 @@ from sqlalchemy.orm import sessionmaker
 from config import settings
 
 # Create database engine
+connect_args = {"check_same_thread": False} if settings.USE_SQLITE else {}
 engine = create_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
-    echo=settings.DEBUG
+    echo=settings.DEBUG,
+    connect_args=connect_args
 )
 
 # Create session factory

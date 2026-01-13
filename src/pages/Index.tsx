@@ -14,15 +14,14 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { api } from "@/services/api";
 
 const Index = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [cameraStatus, setCameraStatus] = useState<"online" | "offline" | "alert">("online");
-  const [lastScanTime, setLastScanTime] = useState<string>("14:30:00");
+  const [lastScanTime, setLastScanTime] = useState<Date | null>(null);
   const [alerts, setAlerts] = useState<Array<{ id: string; message: string; time: string; severity: "high" | "medium" | "low" }>>([
-    { id: "1", message: "Motion detected in restricted area", time: "2 min ago", severity: "high" },
-    { id: "2", message: "Unusual activity pattern", time: "15 min ago", severity: "medium" },
   ]);
 
   useEffect(() => {
@@ -32,13 +31,31 @@ const Index = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Format time remaining until next scan
+  const getTimeUntilNextScan = (): string => {
+    if (!lastScanTime) return "Not scheduled";
+
+    // Calculate next scan time: lastScanTime + 5 minutes
+    const nextScan = new Date(lastScanTime.getTime() + 5 * 60 * 1000);
+    const diff = nextScan.getTime() - currentTime.getTime();
+
+    if (diff <= 0) return "Scanning...";
+
+    const minutes = Math.floor(diff / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+
+    if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    }
+    return `${seconds}s`;
+  };
+
   const handleStartScan = async () => {
     setIsScanning(true); // Start the animation
 
     try {
-      // Connect to your FastAPI backend
-      const response = await fetch("http://localhost:8000/api/scan", { method: "POST" });
-      const data = await response.json();
+      // Use the centralized API service
+      const data = await api.scan();
 
       // Update UI based on what the backend found in your static folders
       if (data.alert) {
@@ -56,7 +73,9 @@ const Index = () => {
       }
 
       console.log("Scan results:", data.results);
-      setLastScanTime(new Date().toLocaleTimeString());
+      // Update scan metadata
+      const scanTime = new Date();
+      setLastScanTime(scanTime);
     } catch (error) {
       console.error("Backend not reachable. Check if FastAPI is running on port 8000.");
     } finally {
@@ -197,15 +216,11 @@ const Index = () => {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Last Scan</span>
-                <span className="font-mono">{lastScanTime}</span>
+                <span className="font-mono">{lastScanTime ? lastScanTime.toLocaleTimeString() : "01:00:00 AM"}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Next Scan</span>
-                <span className="font-mono text-primary">14:35:00</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Scans Today</span>
-                <span className="font-mono">48</span>
+                <span className="font-mono text-primary">{getTimeUntilNextScan()}</span>
               </div>
             </div>
           </div>

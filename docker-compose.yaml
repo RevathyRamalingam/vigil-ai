@@ -1,0 +1,65 @@
+services:
+  # Infrastructure
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: vigilai
+      POSTGRES_PASSWORD: vigilai123
+      POSTGRES_DB: vigilai_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vigilai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  # Backend
+  backend:
+    build: 
+      context: ./backend
+    environment:
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+      - MINIO_ENDPOINT=minio:9000
+      - USE_SQLITE=False
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+
+  # Frontend
+  frontend:
+    build:
+      context: .
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  minio_data:
+  redis_data:

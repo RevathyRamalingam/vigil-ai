@@ -18,9 +18,13 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = "vigilai_db"
     POSTGRES_USER: str = "vigilai"
     POSTGRES_PASSWORD: str = "vigilai123"
+    SQLITE_URL: str = "sqlite:///./vigilai.db"
+    USE_SQLITE: bool = True
     
     @property
     def DATABASE_URL(self) -> str:
+        if self.USE_SQLITE:
+            return self.SQLITE_URL
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
     
     # Redis
