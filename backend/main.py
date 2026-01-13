@@ -12,10 +12,13 @@ import models
 import cameras, media, alerts, analytics, websocket
 from config import settings
 from database import engine, Base
-from ultralytics import YOLO
 import os
 from sqlalchemy.orm import Session
 from database import SessionLocal
+from ml_processor import MLProcessor
+
+# Initialize ML Processor
+ml_processor = MLProcessor()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -63,40 +66,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model = YOLO('yolov8n.pt')
+# Removed: model = YOLO('yolov8n.pt')
 
 def get_db():
+    db = SessionLocal()
     try:
-        db = SessionLocal()
         yield db
-    except Exception:
-        yield None
     finally:
-        if 'db' in locals() and db:
-            db.close()
+        db.close()
 
 def analyze_single_video(video_path):
-    """Processes one video using YOLO and returns a confidence score."""
-    # This runs the YOLO model on the video path provided
+    """Processes one video using MLProcessor and returns assessment."""
     try:
-        results = model(video_path, stream=True)
+        detections = ml_processor.process_video(video_path)
+        
+        # Determine if there's a threat (weapon, fire, smoke)
+        threats = [d for d in detections if d['type'] in ['weapon', 'fire', 'smoke']]
         
         highest_conf = 0.0
-        
-        for r in results:
-            # If the AI detects anything (boxes), get the confidence
-            if len(r.boxes) > 0:
-                current_max = float(r.boxes.conf.max())
-                if current_max > highest_conf:
-                    highest_conf = current_max
-            
-            # Stop after first few frames to keep the 'Scan' button fast
-            break 
+        if threats:
+            highest_conf = max(d['confidence'] for d in threats)
+        elif detections:
+            # If no threats, use highest confidence of other detections (e.g. person) 
+            highest_conf = max(d['confidence'] for d in detections)
 
-        return highest_conf
+        is_threat = len(threats) > 0
+        return highest_conf, is_threat
     except Exception as e:
         logger.error(f"Error analyzing video {video_path}: {e}")
-        return 0.0
+        return 0.0, False
 
 @app.post("/api/scan")
 async def scan_multiple_videos(db: Session = Depends(get_db)):
@@ -116,15 +114,14 @@ async def scan_multiple_videos(db: Session = Depends(get_db)):
         video_path = os.path.join(VIDEO_DIR, video_name)
         
         # 1. Run ML logic for this specific video
-        confidence = analyze_single_video(video_path)
-        is_alert = confidence > 0.5 # Example threshold
+        confidence, is_threat = analyze_single_video(video_path)
         
-        if is_alert:
+        if is_threat:
             alert_triggered = True
 
         # 2. Add to our return dictionary
         scan_report[video_name] = {
-            "status": "Suspicious" if is_alert else "Normal",
+            "status": "Suspicious" if is_threat else "Normal",
             "confidence": round(confidence, 2),
             "timestamp": datetime.now().strftime("%H:%M:%S")
         }
