@@ -36,7 +36,8 @@ services:
   # Backend
   backend:
     build: 
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     environment:
       - POSTGRES_HOST=postgres
       - REDIS_HOST=redis

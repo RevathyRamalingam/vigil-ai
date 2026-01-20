@@ -5,12 +5,20 @@ VigilAI is a cloud-based Machine Learning system designed to enhance public safe
 ## 1. Problem Description
 In high-traffic city areas, monitoring hundreds of camera feeds manually is inefficient and prone to human error. Security personnel often miss critical incidents due to fatigue or cognitive overload.
 
+While crime rates are increasing year after year, cases of rape kidnapping and other violent assault also on the rise. Monitoring entire city using manual task force may seem highly inefficient and time-consuming. It's high time to use AI to prevent such incidents.
+
 **VigilAI addresses this by providing:**
 - **Automated Monitoring**: Ingests live streams or static video footage.
 - **Incident Detection**: Uses YOLOv8 to identify weapons, fire, smoke, and unusual crowd densities.
 - **Real-time Alerting**: Instantly notifies control rooms via a WebSocket-powered dashboard, allowing for rapid response.
 
-## 2. System Architecture & Technologies
+## 2. AI system development (tools, workflow, MCP)
+
+### 2.1 AI System Development
+
+AGENTS.md file contains the details of the AI system development, the prompts used to create front-end, backend and database, and the tools used to create the system.
+
+### 2.2 System Architecture & Technologies
 
 ### Architecture Overview
 The system follows a modern decoupled architecture:

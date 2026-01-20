@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
+import { toast } from "sonner";
 
 const Index = () => {
   const [isScanning, setIsScanning] = useState(false);
@@ -44,11 +45,22 @@ const Index = () => {
         // Add a new alert to the list if one was triggered
         const newAlert = {
           id: Date.now().toString(),
-          message: "Suspicious activity detected during scan",
+          message: data.mcp_notified
+            ? "CRITICAL ALERT: Potential weapon detected. Authorities notified via MCP."
+            : "Suspicious activity detected during scan",
           time: "Just now",
-          severity: "high" as const
+          severity: data.mcp_notified ? "high" as const : "medium" as const
         };
         setAlerts(prev => [newAlert, ...prev]);
+
+        if (data.mcp_notified) {
+          // Trigger a prominent toast for the MCP interaction
+          toast.error("POLICE NOTIFIED", {
+            description: "Critical alert dispatched to Police Control Room via MCP interaction.",
+            duration: 10000,
+          });
+          console.log("MCP interaction triggered: Critical alert sent to police control room.");
+        }
       } else {
         setCameraStatus("online");
       }

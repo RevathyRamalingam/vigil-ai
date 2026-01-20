@@ -91,10 +91,18 @@ def analyze_single_video(video_path):
             highest_conf = max(d['confidence'] for d in detections)
 
         is_threat = len(threats) > 0
-        return highest_conf, is_threat
+        severity = "normal"
+        if is_threat:
+            # If any threat is a weapon, mark as critical
+            if any(d['type'] == 'weapon' for d in threats):
+                severity = "critical"
+            else:
+                severity = "high"
+                
+        return highest_conf, is_threat, severity
     except Exception as e:
         logger.error(f"Error analyzing video {video_path}: {e}")
-        return 0.0, False
+        return 0.0, False, "normal"
 
 @app.post("/api/scan")
 async def scan_multiple_videos(db: Session = Depends(get_db)):
@@ -109,25 +117,30 @@ async def scan_multiple_videos(db: Session = Depends(get_db)):
     # Dictionary to store all results
     scan_report = {}
     alert_triggered = False
+    mcp_notified = False
 
     for video_name in video_files:
         video_path = os.path.join(VIDEO_DIR, video_name)
         
         # 1. Run ML logic for this specific video
-        confidence, is_threat = analyze_single_video(video_path)
+        confidence, is_threat, severity = analyze_single_video(video_path)
         
         if is_threat:
             alert_triggered = True
+            if severity == "critical":
+                mcp_notified = True
 
         # 2. Add to our return dictionary
         scan_report[video_name] = {
             "status": "Suspicious" if is_threat else "Normal",
+            "severity": severity,
             "confidence": round(confidence, 2),
             "timestamp": datetime.now().strftime("%H:%M:%S")
         }
 
     return {
         "alert": alert_triggered,
+        "mcp_notified": mcp_notified,
         "total_scanned": len(video_files),
         "results": scan_report
     }
