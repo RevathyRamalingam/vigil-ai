@@ -4,7 +4,7 @@ Analytics and Dashboard API Endpoints
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from database import get_db
@@ -29,7 +29,7 @@ def get_dashboard_stats(
     total_alerts = db.query(models.Alert).count()
     
     # Alerts today
-    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     alerts_today = db.query(models.Alert).filter(
         models.Alert.created_at >= today_start
     ).count()
@@ -65,7 +65,7 @@ def get_alerts_timeline(
     """
     Get alerts timeline for the specified number of days
     """
-    start_date = datetime.utcnow() - timedelta(days=days)
+    start_date = datetime.now(timezone.utc) - timedelta(days=days)
     
     # Query alerts grouped by date
     timeline = db.query(
@@ -108,7 +108,7 @@ def get_detection_types_stats(
     """
     Get statistics on detection types
     """
-    start_date = datetime.utcnow() - timedelta(days=days)
+    start_date = datetime.now(timezone.utc) - timedelta(days=days)
     
     detection_stats = db.query(
         models.Detection.detection_type,

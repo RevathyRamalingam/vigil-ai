@@ -6,7 +6,7 @@ from config import settings
 from ml_processor import MLProcessor
 from database import SessionLocal
 from db import models
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 import logging
 
@@ -98,7 +98,7 @@ def process_media_task(media_id: str):
         
         # Update media status
         media.processing_status = "completed"
-        media.processed_at = datetime.utcnow()
+        media.processed_at = datetime.now(timezone.utc)
         db.commit()
         
         logger.info(f"Media {media_id} processed successfully. Detections: {len(detections)}")

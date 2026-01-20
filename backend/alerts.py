@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from typing import Optional, List
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 from database import get_db
 from db import models
@@ -78,9 +78,9 @@ def update_alert_status(
     # Handle status changes with timestamps
     if "status" in update_data:
         if update_data["status"] == "acknowledged" and not alert.acknowledged_at:
-            alert.acknowledged_at = datetime.utcnow()
+            alert.acknowledged_at = datetime.now(timezone.utc)
         elif update_data["status"] == "resolved" and not alert.resolved_at:
-            alert.resolved_at = datetime.utcnow()
+            alert.resolved_at = datetime.now(timezone.utc)
     
     # Update fields
     for field, value in update_data.items():

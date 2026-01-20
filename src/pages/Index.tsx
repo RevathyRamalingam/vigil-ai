@@ -31,25 +31,6 @@ const Index = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Format time remaining until next scan
-  const getTimeUntilNextScan = (): string => {
-    if (!lastScanTime) return "Not scheduled";
-
-    // Calculate next scan time: lastScanTime + 5 minutes
-    const nextScan = new Date(lastScanTime.getTime() + 5 * 60 * 1000);
-    const diff = nextScan.getTime() - currentTime.getTime();
-
-    if (diff <= 0) return "Scanning...";
-
-    const minutes = Math.floor(diff / 60000);
-    const seconds = Math.floor((diff % 60000) / 1000);
-
-    if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    }
-    return `${seconds}s`;
-  };
-
   const handleStartScan = async () => {
     setIsScanning(true); // Start the animation
 
@@ -217,10 +198,6 @@ const Index = () => {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Last Scan</span>
                 <span className="font-mono">{lastScanTime ? lastScanTime.toLocaleTimeString() : "01:00:00 AM"}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Next Scan</span>
-                <span className="font-mono text-primary">{getTimeUntilNextScan()}</span>
               </div>
             </div>
           </div>
