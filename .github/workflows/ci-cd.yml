@@ -54,16 +54,3 @@ jobs:
       - name: Build Frontend Image
         run: |
           docker build -t vigilai-frontend -f Dockerfile .
-
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Railway CLI
-        run: npm i -g @railway/cli
-      - name: Deploy to Railway
-        run: railway up --detach --service vigilai
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
