@@ -66,6 +66,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount static files to serve videos
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # Removed: model = YOLO('yolov8n.pt')
 
 def get_db():

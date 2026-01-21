@@ -80,7 +80,7 @@ def notify_authorities(alert_id: str, department: str = "Police Control Room") -
         department: The department to notify (default: Police Control Room).
     """
     # In a real system, this would call an external API or dispatch system
-    print(f"MCP NOTIFICATION: Alert {alert_id} dispatched to {department}")
+    # Note: Use logging instead of print to avoid breaking the MCP protocol on stdout
     return {
         "status": "success",
         "message": f"Alert {alert_id} successfully sent to {department}",

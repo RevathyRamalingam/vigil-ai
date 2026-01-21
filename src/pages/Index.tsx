@@ -115,14 +115,23 @@ const Index = () => {
             cameraStatus === "alert" && "border-destructive/50 glow-destructive"
           )}>
             {/* Camera View */}
-            <div className="relative aspect-video bg-muted/30">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Camera className="w-20 h-20 text-muted-foreground/30" />
-              </div>
+            <div className="relative aspect-video bg-black/90">
+              <video
+                autoPlay
+                muted
+                loop
+                className="absolute inset-0 w-full h-full object-cover opacity-80"
+              >
+                <source src="http://localhost:8000/static/videos/travel_video_normal.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+
+              {/* Overlay for "grainy" security feel */}
+              <div className="absolute inset-0 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
 
               {/* Scan line effect */}
               {isScanning && (
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
                   <div className="absolute w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent scan-line" />
                 </div>
               )}
@@ -148,10 +157,14 @@ const Index = () => {
               </div>
 
               {/* Camera ID */}
-              <div className="absolute top-4 right-4">
-                <span className="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur text-sm font-mono">
+              <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+                <span className="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur text-sm font-mono z-10">
                   CAM-001
                 </span>
+                <div className="flex items-center gap-2 px-2 py-1 rounded bg-destructive/20 border border-destructive/30 backdrop-blur z-10">
+                  <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                  <span className="text-[10px] font-bold text-destructive tracking-widest uppercase">REC</span>
+                </div>
               </div>
 
               {/* Time Overlay */}
