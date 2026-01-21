@@ -1,0 +1,13 @@
+node_modules
+.git
+.github
+backend/__pycache__
+backend/.pytest_cache
+dist
+*.log
+.env
+venv
+.venv
+backend/vigilai.db
+runs/
+static/
