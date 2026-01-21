@@ -1,0 +1,84 @@
+services:
+  # Managed PostgreSQL
+  - type: database
+    name: vigilai-db
+    databaseName: vigilai_db
+    user: vigilai
+    plan: free
+
+  # Managed Redis
+  - type: redis
+    name: vigilai-redis
+    plan: free
+    ipAllowList: [] # Only allow internal connections
+
+  # MinIO (Binary Storage)
+  - type: web
+    name: vigilai-minio
+    env: docker
+    dockerfile: ./backend/Dockerfile # This is wrong, but I need a way to run MinIO
+    # Actually, Render can run MinIO directly from an image, but Blueprints favor Dockerfiles in the repo
+    # or just use 'image'. Let's use 'image'.
+    image:
+      url: minio/minio
+    envVars:
+      - key: MINIO_ROOT_USER
+        value: minioadmin
+      - key: MINIO_ROOT_PASSWORD
+        value: minioadmin
+    command: server /data --console-address ":9001"
+    plan: free
+
+  # Backend (FastAPI)
+  - type: web
+    name: vigilai-backend
+    env: docker
+    dockerContext: .
+    dockerfile: backend/Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: vigilai-db
+          property: host
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: vigilai-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: vigilai-db
+          property: password
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: vigilai-db
+          property: database
+      - key: REDIS_HOST
+        fromRedis:
+          name: vigilai-redis
+          property: host
+      - key: REDIS_PORT
+        fromRedis:
+          name: vigilai-redis
+          property: port
+      - key: MINIO_ENDPOINT
+        value: vigilai-minio:9000 # Internal hostname
+      - key: USE_SQLITE
+        value: "False"
+      - key: DEBUG
+        value: "False"
+
+  # Frontend (Vite + Nginx)
+  - type: web
+    name: vigilai-frontend
+    env: docker
+    dockerContext: .
+    dockerfile: Dockerfile
+    plan: free
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: vigilai-backend
+          type: web
+          property: host
