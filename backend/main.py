@@ -68,7 +68,13 @@ app.add_middleware(
 
 # Mount static files to serve videos
 from fastapi.staticfiles import StaticFiles
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Ensure static directory exists
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+if not os.path.exists(STATIC_DIR):
+    os.makedirs(STATIC_DIR)
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Removed: model = YOLO('yolov8n.pt')
 
