@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     # Database
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
-    POSTGRES_DB: str = "vigilai_db"
+    POSTGRES_DB: str = "vigilai"
     POSTGRES_USER: str = "vigilai"
     POSTGRES_PASSWORD: str = "vigilai123"
     SQLITE_URL: str = "sqlite:///./vigilai.db"

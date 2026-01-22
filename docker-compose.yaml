@@ -5,13 +5,13 @@ services:
     environment:
       POSTGRES_USER: vigilai
       POSTGRES_PASSWORD: vigilai123
-      POSTGRES_DB: vigilai_db
+      POSTGRES_DB: vigilai
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vigilai"]
+      test: ["CMD-SHELL", "pg_isready -U vigilai -d vigilai"]
       interval: 10s
       timeout: 5s
       retries: 5
