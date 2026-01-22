@@ -14,6 +14,8 @@ class CameraBase(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     status: str = "active"
+    stream_url: Optional[str] = None
+    is_live: bool = False
 
 
 class CameraCreate(CameraBase):
@@ -26,6 +28,8 @@ class CameraUpdate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     status: Optional[str] = None
+    stream_url: Optional[str] = None
+    is_live: Optional[bool] = None
 
 
 class Camera(CameraBase):

@@ -148,10 +148,30 @@ async def scan_multiple_videos(db: Session = Depends(get_db)):
             "timestamp": datetime.now().strftime("%H:%M:%S")
         }
 
+    # 3. Scan live streams from the database
+    live_cameras = db.query(models.Camera).filter(models.Camera.is_live == True).all()
+    for camera in live_cameras:
+        if not camera.stream_url:
+            continue
+            
+        confidence, is_threat, severity = analyze_single_video(camera.stream_url)
+        
+        if is_threat:
+            alert_triggered = True
+            if severity == "critical":
+                mcp_notified = True
+
+        scan_report[f"Stream: {camera.name}"] = {
+            "status": "Suspicious" if is_threat else "Normal",
+            "severity": severity,
+            "confidence": round(confidence, 2),
+            "timestamp": datetime.now().strftime("%H:%M:%S")
+        }
+
     return {
         "alert": alert_triggered,
         "mcp_notified": mcp_notified,
-        "total_scanned": len(video_files),
+        "total_scanned": len(video_files) + len(live_cameras),
         "results": scan_report
     }
 

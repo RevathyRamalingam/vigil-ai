@@ -1,7 +1,7 @@
 """
 SQLAlchemy Database Models
 """
-from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, JSON, Text
+from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, JSON, Text, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
@@ -19,6 +19,8 @@ class Camera(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     status = Column(String(50), default="active")
+    stream_url = Column(String(1000), nullable=True)
+    is_live = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     

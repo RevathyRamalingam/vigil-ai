@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Camera,
   AlertTriangle,
@@ -10,39 +10,99 @@ import {
   Bell,
   CheckCircle,
   Clock,
-  Scan
+  Scan,
+  Monitor
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
 import { toast } from "sonner";
+import Hls from "hls.js";
+
+interface CameraData {
+  id: string;
+  name: string;
+  location: string;
+  status: string;
+  stream_url?: string;
+  is_live: boolean;
+}
 
 const Index = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [cameraStatus, setCameraStatus] = useState<"online" | "offline" | "alert">("online");
   const [lastScanTime, setLastScanTime] = useState<Date | null>(null);
-  const [alerts, setAlerts] = useState<Array<{ id: string; message: string; time: string; severity: "high" | "medium" | "low" }>>([
-  ]);
+  const [alerts, setAlerts] = useState<Array<{ id: string; message: string; time: string; severity: "high" | "medium" | "low" }>>([]);
+  const [cameras, setCameras] = useState<CameraData[]>([]);
+  const [selectedCamera, setSelectedCamera] = useState<CameraData | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
+
+    fetchCameras();
+
     return () => clearInterval(timer);
   }, []);
 
+  const fetchCameras = async () => {
+    try {
+      const data = await api.getCameras();
+      setCameras(data);
+      if (data.length > 0 && !selectedCamera) {
+        setSelectedCamera(data[0]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch cameras:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!videoRef.current || !selectedCamera) return;
+
+    const video = videoRef.current;
+
+    // Clean up previous HLS instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    if (selectedCamera.is_live && selectedCamera.stream_url) {
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(selectedCamera.stream_url);
+        hls.attachMedia(video);
+        hlsRef.current = hls;
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS support (Safari)
+        video.src = selectedCamera.stream_url;
+      }
+    } else {
+      // Local video fallback or specific file
+      video.src = "/static/videos/travel_video_normal.mp4";
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+      }
+    };
+  }, [selectedCamera]);
+
   const handleStartScan = async () => {
-    setIsScanning(true); // Start the animation
+    setIsScanning(true);
 
     try {
-      // Use the centralized API service
       const data = await api.scan();
 
-      // Update UI based on what the backend found in your static folders
       if (data.alert) {
         setCameraStatus("alert");
-        // Add a new alert to the list if one was triggered
         const newAlert = {
           id: Date.now().toString(),
           message: data.mcp_notified
@@ -54,28 +114,23 @@ const Index = () => {
         setAlerts(prev => [newAlert, ...prev]);
 
         if (data.mcp_notified) {
-          // Trigger a prominent toast for the MCP interaction
           toast.error("POLICE NOTIFIED", {
             description: "Critical alert dispatched to Police Control Room via MCP interaction.",
             duration: 10000,
           });
-          console.log("MCP interaction triggered: Critical alert sent to police control room.");
         }
       } else {
         setCameraStatus("online");
       }
 
-      console.log("Scan results:", data.results);
-      // Update scan metadata
       const scanTime = new Date();
       setLastScanTime(scanTime);
     } catch (error) {
-      console.error("Backend not reachable. Check if FastAPI is running on port 8000.");
+      toast.error("Scan failed", { description: "Backend not reachable or internal error." });
     } finally {
-      setIsScanning(false); // Stop the animation
+      setIsScanning(false);
     }
   };
-
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -107,36 +162,65 @@ const Index = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Camera Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left Sidebar - Camera List */}
+        <div className="space-y-4">
+          <div className="glass-panel rounded-xl p-4">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <Camera className="w-4 h-4 text-primary" />
+              Cameras
+            </h3>
+            <div className="space-y-2">
+              {cameras.map((cam) => (
+                <button
+                  key={cam.id}
+                  onClick={() => setSelectedCamera(cam)}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-3 rounded-lg transition-all text-left border",
+                    selectedCamera?.id === cam.id
+                      ? "bg-primary/10 border-primary text-primary"
+                      : "bg-background/20 border-transparent hover:border-border"
+                  )}
+                >
+                  <div className={cn(
+                    "w-2 h-2 rounded-full",
+                    cam.is_live ? "bg-success status-pulse" : "bg-muted-foreground"
+                  )} />
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-sm font-medium truncate">{cam.name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{cam.location}</p>
+                  </div>
+                  {cam.is_live && <span className="text-[10px] font-bold text-success uppercase tracking-tighter">Live</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Main Feed */}
         <div className="lg:col-span-2">
           <div className={cn(
             "glass-panel rounded-xl overflow-hidden transition-all duration-300",
             cameraStatus === "alert" && "border-destructive/50 glow-destructive"
           )}>
-            {/* Camera View */}
             <div className="relative aspect-video bg-black/90">
               <video
+                ref={videoRef}
                 autoPlay
                 muted
                 loop
+                playsInline
                 className="absolute inset-0 w-full h-full object-cover opacity-80"
-              >
-                <source src="/static/videos/travel_video_normal.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+              />
 
-              {/* Overlay for "grainy" security feel */}
               <div className="absolute inset-0 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
 
-              {/* Scan line effect */}
               {isScanning && (
                 <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
                   <div className="absolute w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent scan-line" />
                 </div>
               )}
 
-              {/* Status Badge */}
               <div className="absolute top-4 left-4">
                 <div className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border backdrop-blur",
@@ -156,10 +240,9 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Camera ID */}
               <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
                 <span className="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur text-sm font-mono z-10">
-                  CAM-001
+                  {selectedCamera?.name || "CAM-001"}
                 </span>
                 <div className="flex items-center gap-2 px-2 py-1 rounded bg-destructive/20 border border-destructive/30 backdrop-blur z-10">
                   <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
@@ -167,25 +250,22 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Time Overlay */}
               <div className="absolute bottom-4 left-4">
                 <span className="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur text-sm font-mono text-primary">
                   {currentTime.toLocaleString()}
                 </span>
               </div>
 
-              {/* Fullscreen Button */}
               <button className="absolute bottom-4 right-4 p-2 rounded-lg bg-background/80 backdrop-blur hover:bg-background/90 transition-colors">
                 <Maximize2 className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Camera Info & Controls */}
             <div className="p-4 border-t border-border/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="font-semibold">City Camera</h2>
-                  <p className="text-sm text-muted-foreground">Metropolitan Area</p>
+                  <h2 className="font-semibold">{selectedCamera?.name || "Select Camera"}</h2>
+                  <p className="text-sm text-muted-foreground">{selectedCamera?.location || "N/A"}</p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -206,9 +286,8 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Sidebar */}
+        {/* Right Sidebar */}
         <div className="space-y-6">
-          {/* Status Card */}
           <div className="glass-panel rounded-xl p-4">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-success" />
@@ -217,17 +296,16 @@ const Index = () => {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Camera</span>
-                <span className="text-success font-medium">Online</span>
+                <span className="text-muted-foreground">Source</span>
+                <span className="text-success font-medium">{selectedCamera?.is_live ? "Live Stream" : "Static Feed"}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Last Scan</span>
-                <span className="font-mono">{lastScanTime ? lastScanTime.toLocaleTimeString() : "01:00:00 AM"}</span>
+                <span className="font-mono">{lastScanTime ? lastScanTime.toLocaleTimeString() : "N/A"}</span>
               </div>
             </div>
           </div>
 
-          {/* Alerts */}
           <div className="glass-panel rounded-xl p-4">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-destructive" />
@@ -237,11 +315,9 @@ const Index = () => {
               </span>
             </h3>
 
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
               {alerts.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No alerts
-                </p>
+                <p className="text-sm text-muted-foreground text-center py-4">No alerts</p>
               ) : (
                 alerts.map((alert) => (
                   <div
@@ -262,12 +338,6 @@ const Index = () => {
                 ))
               )}
             </div>
-
-            {alerts.length > 0 && (
-              <Button variant="ghost" className="w-full mt-3 text-sm">
-                View All Alerts
-              </Button>
-            )}
           </div>
         </div>
       </div>

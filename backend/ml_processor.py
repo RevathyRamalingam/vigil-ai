@@ -61,8 +61,41 @@ class MLProcessor:
             List of detection dictionaries
         """
         detections = []
+        is_stream = self._is_stream(video_url)
         
-        # Download video to temp file
+        if is_stream:
+            # Process live stream directly
+            cap = cv2.VideoCapture(video_url)
+            if not cap.isOpened():
+                logger.error(f"Failed to open stream: {video_url}")
+                return []
+            
+            fps = cap.get(cv2.CAP_PROP_FPS) or 30
+            frame_skip = max(1, int(fps // settings.FRAME_EXTRACTION_FPS))
+            
+            # For live streams, we limit processing to a fixed number of frames
+            # to avoid blocking. e.g., process 10 seconds of stream.
+            max_frames = int(fps * 10) 
+            frame_count = 0
+            processed_count = 0
+            
+            while cap.isOpened() and frame_count < max_frames:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                
+                if frame_count % frame_skip == 0:
+                    frame_detections = self._process_frame(frame, frame_count)
+                    detections.extend(frame_detections)
+                    processed_count += 1
+                
+                frame_count += 1
+            
+            cap.release()
+            logger.info(f"Processed {processed_count} frames from stream, found {len(detections)} detections")
+            return detections
+
+        # Download video to temp file for static files
         with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_file:
             video_path = tmp_file.name
             
@@ -78,7 +111,7 @@ class MLProcessor:
         try:
             # Open video
             cap = cv2.VideoCapture(video_path)
-            fps = int(cap.get(cv2.CAP_PROP_FPS))
+            fps = int(cap.get(cv2.CAP_PROP_FPS) or 30)
             frame_count = 0
             
             # Process frames at specified FPS
@@ -104,6 +137,11 @@ class MLProcessor:
             Path(video_path).unlink(missing_ok=True)
         
         return detections
+
+    def _is_stream(self, url: str) -> bool:
+        """Check if URL is a live stream (HLS, RTSP, etc.)"""
+        stream_extensions = ('.m3u8', '.ts', '.mpd')
+        return url.startswith('rtsp://') or url.startswith('rtmp://') or any(url.lower().endswith(ext) for ext in stream_extensions)
     
     def process_image(self, image_url: str) -> List[Dict]:
         """

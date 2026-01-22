@@ -27,11 +27,27 @@ def seed():
                 location="Ground Floor Lobby",
                 status="active",
                 created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
+                updated_at=datetime.now(timezone.utc),
+                is_live=False
             )
             db.add(db_camera)
             db.flush()
             print(f"Added camera: {camera_name}")
+
+            # Add a live camera
+            live_camera_id = uuid.uuid4()
+            live_camera = models.Camera(
+                id=live_camera_id,
+                name="Live Traffic Cam",
+                location="Public HLS Stream",
+                status="active",
+                is_live=True,
+                stream_url="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc)
+            )
+            db.add(live_camera)
+            print(f"Added live camera: Live Traffic Cam")
         else:
             camera_id = db_camera.id
             print(f"Camera '{camera_name}' already exists.")
