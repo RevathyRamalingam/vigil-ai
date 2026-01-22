@@ -122,7 +122,7 @@ const Index = () => {
                 loop
                 className="absolute inset-0 w-full h-full object-cover opacity-80"
               >
-                <source src="http://localhost:8000/static/videos/travel_video_normal.mp4" type="video/mp4" />
+                <source src="/static/videos/travel_video_normal.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
 
