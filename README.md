@@ -10,7 +10,7 @@ While crime rates are increasing year after year, cases of rape kidnapping and o
 **VigilAI addresses this by providing:**
 - **Automated Monitoring**: Ingests live streams or static video footage.
 - **Incident Detection**: Uses YOLOv8 to identify weapons, fire, smoke, and unusual crowd densities.
-- **Real-time Alerting**: Instantly notifies control rooms via a WebSocket-powered dashboard, allowing for rapid response.
+- **Real-time Alerting**: Instantly notifies police control rooms via a WebSocket-powered dashboard by AI Agent(McpClient)
 
 ## 2. AI system development (tools, workflow, MCP)
 
@@ -26,9 +26,10 @@ The system follows a modern decoupled architecture:
 - **Backend**: A FastAPI-based REST API that handles logic, database persistence, and ML orchestration.
 - **ML Processor**: A dedicated layer using YOLOv8 for frame-by-frame analysis.
 - **Persistence**: PostgreSQL for structured data and MinIO (S3-compatible) for video/image storage.
-- **Real-time**: WebSockets for push-based notifications to the dashboard.
+- **Real-time**: WebSockets and McpClient using ToyAIKit for push-based notifications to the dashboard.
+- CI/CD pipeline for running automated testcases covering Front-end(FE) and Backend(BE) using GitHubWorkflow for every code push/PR.
 
-### Technology Roles
+### Technology Role
 - **FastAPI (Backend)**: Chosen for its high performance and native async support, serving as the API contract (OpenAPI) provider.
 - **React 18 & Vite (Frontend)**: Provides a fast, interactive UI using Shadcn/ui for premium aesthetics.
 - **YOLOv8 (ML)**: The state-of-the-art model for balanced speed and accuracy in object detection.

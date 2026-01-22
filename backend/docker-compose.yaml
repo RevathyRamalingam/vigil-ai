@@ -16,7 +16,7 @@ services:
     environment:
       POSTGRES_USER: vigilai
       POSTGRES_PASSWORD: vigilai123
-      POSTGRES_DB: vigilai_db
+      POSTGRES_DB: vigilai
     ports:
       - "5432:5432"
     volumes:
