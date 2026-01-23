@@ -8,11 +8,27 @@ import {
   CheckCircle,
   Clock,
   Scan,
+  PlayCircle,
+  AlertOctagon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
 import { toast } from "sonner";
+
+// Video configuration
+const VIDEO_PATHS = {
+  normal: {
+    path: "/static/videos/travel_video_normal.mp4",
+    filename: "travel_video_normal.mp4",
+    label: "Normal Activity"
+  },
+  suspicious: {
+    path: "/static/videos/Burglary001_x264_14.mp4",
+    filename: "Burglary001_x264_14.mp4",
+    label: "Suspicious Activity"
+  }
+};
 
 const Index = () => {
   const [isScanning, setIsScanning] = useState(false);
@@ -20,6 +36,9 @@ const Index = () => {
   const [cameraStatus, setCameraStatus] = useState<"online" | "offline" | "alert">("online");
   const [lastScanTime, setLastScanTime] = useState<Date | null>(null);
   const [alerts, setAlerts] = useState<Array<{ id: string; message: string; time: string; severity: "high" | "medium" | "low" }>>([]);
+
+  // Demo State
+  const [activeVideo, setActiveVideo] = useState<"normal" | "suspicious">("normal");
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -35,7 +54,9 @@ const Index = () => {
     setIsScanning(true);
 
     try {
-      const data = await api.scan();
+      // Pass the specific filename for the currently active video
+      const filename = VIDEO_PATHS[activeVideo].filename;
+      const data = await api.scan(filename);
 
       if (data.alert) {
         setCameraStatus("alert");
@@ -83,6 +104,28 @@ const Index = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Demo Controls */}
+          <div className="flex items-center gap-2 mr-4 bg-muted/30 p-1 rounded-lg border border-border/50">
+            <Button
+              variant={activeVideo === "normal" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setActiveVideo("normal")}
+              className={cn("gap-2 text-xs", activeVideo === "normal" && "bg-background shadow-sm")}
+            >
+              <PlayCircle className="w-3.5 h-3.5" />
+              Normal
+            </Button>
+            <Button
+              variant={activeVideo === "suspicious" ? "destructive" : "ghost"}
+              size="sm"
+              onClick={() => setActiveVideo("suspicious")}
+              className={cn("gap-2 text-xs", activeVideo === "suspicious" && "shadow-sm")}
+            >
+              <AlertOctagon className="w-3.5 h-3.5" />
+              Suspicious
+            </Button>
+          </div>
+
           <span className="text-sm font-mono text-muted-foreground">
             {currentTime.toLocaleTimeString()}
           </span>
@@ -108,8 +151,9 @@ const Index = () => {
           )}>
             <div className="relative aspect-video bg-black/90">
               <video
+                key={activeVideo} // key ensures video reloads when source changes
                 ref={videoRef}
-                src="/static/videos/travel_video_normal.mp4"
+                src={VIDEO_PATHS[activeVideo].path}
                 autoPlay
                 muted
                 loop
@@ -146,7 +190,7 @@ const Index = () => {
 
               <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
                 <span className="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur text-sm font-mono z-10">
-                  CAM-001
+                  CAM-DEMO-01
                 </span>
                 <div className="flex items-center gap-2 px-2 py-1 rounded bg-destructive/20 border border-destructive/30 backdrop-blur z-10">
                   <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
@@ -168,8 +212,8 @@ const Index = () => {
             <div className="p-4 border-t border-border/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="font-semibold">Main Entrance Camera</h2>
-                  <p className="text-sm text-muted-foreground">Building A - Front Gate</p>
+                  <h2 className="font-semibold">Demo Feed: {VIDEO_PATHS[activeVideo].label}</h2>
+                  <p className="text-sm text-muted-foreground">Scenario Simulation Mode</p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -201,7 +245,7 @@ const Index = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Source</span>
-                <span className="text-success font-medium">Static Feed</span>
+                <span className="text-success font-medium">Demo Video</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Last Scan</span>
