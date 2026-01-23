@@ -1,25 +1,23 @@
-# Use an official Python runtime as a parent image
-FROM python:3.11-slim
+# 1. Use the Ultralytics base - it already has Torch and OpenCV pre-installed
+FROM ultralytics/ultralytics:latest-python
 
-# Install system dependencies
+# 2. Install only the extra system deps you need (ffmpeg is usually pre-installed here)
 RUN apt-get update && apt-get install -y \
-    libgl1 \
-    libglib2.0-0 \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
 WORKDIR /app
 
-# Copy requirements and install
+# 3. Copy requirements first to leverage Docker layer caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the backend code
+# 4. Remove --no-cache-dir to allow the buildkit cache to actually work
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
+
+# 5. Copy your backend code
 COPY backend/ .
 
-# Expose port
 EXPOSE 8000
 
-# Command to run the application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

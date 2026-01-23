@@ -4,7 +4,8 @@ FROM node:20-slim AS build-stage
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
 
 COPY . .
 RUN npm run build
