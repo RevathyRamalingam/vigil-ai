@@ -21,7 +21,22 @@ class MLProcessor:
     def __init__(self):
         """Initialize YOLO model"""
         try:
-            self.model = YOLO(settings.MODEL_PATH)
+            # Fix for WeightsUnpickler error with newer ultralytics/torch
+            import torch
+            from unittest.mock import patch
+
+            # Monkeypatch torch.load to force weights_only=False
+            # This is required because ultralytics 8.0.0 is not fully compatible with PyTorch 2.6+ default security settings
+            original_load = torch.load
+            
+            def safe_load(*args, **kwargs):
+                if 'weights_only' not in kwargs:
+                    kwargs['weights_only'] = False
+                return original_load(*args, **kwargs)
+
+            with patch('torch.load', side_effect=safe_load):
+                self.model = YOLO(settings.MODEL_PATH)
+            
             logger.info(f"Loaded model from {settings.MODEL_PATH}")
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
