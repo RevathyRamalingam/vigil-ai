@@ -63,7 +63,7 @@ const Index = () => {
         const newAlert = {
           id: Date.now().toString(),
           message: data.mcp_notified
-            ? "CRITICAL ALERT: Potential weapon detected. Authorities notified via MCP."
+            ? "CRITICAL ALERT: Suspicious activity detected. Authorities notified via MCP."
             : "Suspicious activity detected during scan",
           time: "Just now",
           severity: data.mcp_notified ? "high" as const : "medium" as const
