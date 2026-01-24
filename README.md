@@ -5,11 +5,11 @@ VigilAI is a cloud-based Machine Learning system designed to enhance public safe
 ## 1. Problem Description
 In high-traffic city areas, monitoring hundreds of camera feeds manually is inefficient and prone to human error. Security personnel often miss critical incidents due to fatigue or cognitive overload.
 
-While crime rates are increasing year after year, cases of rape kidnapping and other violent assault also on the rise. Monitoring entire city using manual task force may seem highly inefficient and time-consuming. It's high time to use AI to prevent such incidents.
+While crime rates are increasing year after year, cases of rape, kidnapping and other violent assault are also on the rise. Monitoring entire city using manual task force may seem highly inefficient and time-consuming. It's high time to use AI to prevent such incidents.
 
 **VigilAI addresses this by providing:**
-- **Automated Monitoring**: Ingests live streams or static video footage.
-- **Incident Detection**: Uses YOLOv8 to identify weapons, fire, smoke, and unusual crowd densities.
+- **Automated Monitoring**: Ingests live streams or static video footage. Currently, it is only supported for static video footage. Support for live streams is in progress.
+- **Incident Detection**: Uses YOLOv8 ML model to identify weapons, fire, smoke, and unusual crowd densities.
 - **Real-time Alerting**: Instantly notifies police control rooms via a WebSocket-powered dashboard by AI Agent(McpClient)
 
 ## 2. AI system development (tools, workflow, MCP)
@@ -17,6 +17,10 @@ While crime rates are increasing year after year, cases of rape kidnapping and o
 ### 2.1 AI System Development
 
 AGENTS.md file contains the details of the AI system development, the prompts used to create front-end, backend and database, and the tools used to create the system.
+
+The React FE shows a surveillance dashboard where the area is monitored, when the scan button is pressed the video is scanned for any suspicious activity in the neighbourhood and reports to the cop control room. For demo purpose, the video is static and the scan button toggles between normal and suspicious video to show the results.
+
+The workflow starts from the FE UI, as user clicks on the scan button, the video is sent to the backend via API call. The backend then sends the video to the ML processor via API call. The ML processor then sends the video to the YOLOv8 model for analysis. The YOLOv8 model then sends the results to the backend via API call. The backend then sends the results to the FE UI via API call.
 
 ### 2.2 System Architecture & Technologies
 

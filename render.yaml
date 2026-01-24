@@ -1,34 +1,13 @@
-services:
-  # Managed PostgreSQL
-  - type: database
-    name: vigilai-db
+# Managed PostgreSQL Database
+databases:
+  - name: vigilai-db
     databaseName: vigilai_db
     user: vigilai
     plan: free
 
-  # Managed Redis
-  - type: redis
-    name: vigilai-redis
-    plan: free
-    ipAllowList: [] # Only allow internal connections
-
-  # MinIO (Binary Storage)
-  - type: web
-    name: vigilai-minio
-    env: docker
-    dockerfile: ./backend/Dockerfile # This is wrong, but I need a way to run MinIO
-    # Actually, Render can run MinIO directly from an image, but Blueprints favor Dockerfiles in the repo
-    # or just use 'image'. Let's use 'image'.
-    image:
-      url: minio/minio
-    envVars:
-      - key: MINIO_ROOT_USER
-        value: minioadmin
-      - key: MINIO_ROOT_PASSWORD
-        value: minioadmin
-    command: server /data --console-address ":9001"
-    plan: free
-
+# Managed Redis (separate top-level section, not in services)
+# Note: Redis in Render.yaml uses a different format
+services:
   # Backend (FastAPI)
   - type: web
     name: vigilai-backend
@@ -55,19 +34,45 @@ services:
           name: vigilai-db
           property: database
       - key: REDIS_HOST
-        fromRedis:
+        fromService:
           name: vigilai-redis
+          type: pserv
           property: host
       - key: REDIS_PORT
-        fromRedis:
-          name: vigilai-redis
-          property: port
+        value: "6379"
       - key: MINIO_ENDPOINT
-        value: vigilai-minio:9000 # Internal hostname
+        fromService:
+          name: vigilai-minio
+          type: pserv
+          property: host
+      - key: MINIO_PORT
+        value: "9000"
       - key: USE_SQLITE
         value: "False"
       - key: DEBUG
         value: "False"
+
+  # MinIO (Private Service - not publicly accessible)
+  - type: pserv
+    name: vigilai-minio
+    env: docker
+    dockerfilePath: ./Dockerfile.minio  # Create a simple Dockerfile for MinIO
+    envVars:
+      - key: MINIO_ROOT_USER
+        generateValue: true
+      - key: MINIO_ROOT_PASSWORD
+        generateValue: true
+    disk:
+      name: minio-data
+      mountPath: /data
+      sizeGB: 1
+
+  # Redis (Private Service)
+  - type: pserv
+    name: vigilai-redis
+    env: docker
+    dockerfilePath: ./Dockerfile.redis  # Or use image if Render supports it
+    plan: free
 
   # Frontend (Vite + Nginx)
   - type: web
