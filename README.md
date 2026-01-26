@@ -101,12 +101,24 @@ npm init playwright@latest (to install playwright)
 docker-compose up --build (to start the containers)
 npx playwright test --ui (to run the tests)
 ```
-The integration tests are integrated in the CI/CD pipeline in GitHub Actions.
+The integration tests are integrated in the CI/CD pipeline in GitHub Actions. The test runs can be found at https://github.com/RevathyRamalingam/vigil-ai/actions
 
 ## 7. Database Integration
 VigilAI supports both SQLite (Development) and PostgreSQL (Production).
 - **SQLite**: Automatic configuration when running locally for easy setup.
 - **Postgres**: Used in the Docker environment for high availability and persistence.
+
+STEPS TO CONNECT TO POSTGRES DATABASE
+
+1. Connect to the Postgres container:
+
+> docker exec -it vigil-ai-postgres-1 psql -U vigilai -d vigilai
+
+> \dt  (to view the tables that are created)
+
+> SELECT * FROM alerts; (to view the data in the alerts table)
+
+> exit (to exit the container)
 
 ## 8. CI/CD
 We use GitHub Actions to automatically run tests and lint checks on every push to `main`.
